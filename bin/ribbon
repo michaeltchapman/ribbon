@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+import argparse
+import ribbon
+
+def main():
+    parser = argparse.ArgumentParser(description='Ribbon: a tool for cross platform package builds')
+    parser.add_argument('config', nargs=1, help='Path to yaml config file describing build')
+    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug output')
+    args = parser.parse_args()
+    ribbon.build(args)
+
+if __name__ == '__main__':
+    main()
