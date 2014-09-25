@@ -26,6 +26,7 @@ package_data = {
 }
 
 requires = [
+  'PyYaml'
 ]
 
 classifiers = [
@@ -52,4 +53,5 @@ setup(
     url='https://github.com/michaeltchapman/ribbon',
     license='Apache',
     classifiers=classifiers,
+    scripts=['bin/ribbon'],
 )
