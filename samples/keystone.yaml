@@ -1,0 +1,24 @@
+name: keystone
+version: 2014.1
+
+upstreams:
+  rpm:
+    url: 'https://repos.fedorapeople.org/repos/openstack/openstack-icehouse/epel-6/openstack-keystone-2014.1.2.1-1.el6.src.rpm'
+  extract:
+    - 'dependencies'
+    - 'init_scripts'
+    - 'package_scripts'
+    - paths:
+      - 'etc'
+
+pre_build:
+  source:
+    git:
+      source: 'https://github.com/openstack/keystone'
+      ref: 'stable/icehouse'
+
+build:
+  - python:
+
+
+

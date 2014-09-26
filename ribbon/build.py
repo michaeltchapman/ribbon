@@ -3,19 +3,24 @@
 import yaml
 import logging
 
-log = None
+log = False
+noop = False
 
 def build(args):
-    if args['debug']:
+    if args.debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
-    log = logging.getlogger(__name__)
 
-    config = parse_config(path)
+    global log
+    log = logging.getLogger('build')
+    noop = args.noop
+    config = parse_config(args.path[0])
     log.debug('Config loaded: %s', config)
 
-    dependencies(config)
+    return
+
+    upstreams(config)
     pre_build(config)
     source_build(config)
     post_build(config)
@@ -32,7 +37,7 @@ def parse_config(path):
     except EnvironmentError:
         log.error('Exception opening file at: %s', path)
 
-def dependencies(config):
+def upstreams(config):
     raise NotImplementedError
 def pre_build(config):
     raise NotImplementedError
@@ -42,9 +47,9 @@ def post_build(config):
     raise NotImplementedError
 def init_scripts(config):
     raise NotImplementedError
-def  pkg_scripts(config):
+def pkg_scripts(config):
     raise NotImplementedError
-def  build_package(config):
+def build_package(config):
     raise NotImplementedError
-def  publish_package(config):
+def publish_package(config):
     raise NotImplementedError
