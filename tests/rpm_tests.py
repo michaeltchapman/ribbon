@@ -3,6 +3,7 @@ from ribbon import rpm
 import mock
 import subprocess
 
+# from openstack-keystone-2014.1.2.1-1.el6.noarch.rpm
 script_query = """
 preinstall scriptlet (using /bin/sh):
 # 163:163 for keystone (openstack-keystone) - rhbz#752842
@@ -28,6 +29,7 @@ if [ $1 -ge 1 ] ; then
     /sbin/service openstack-keystone condrestart >/dev/null 2>&1 || :
 fi
 """
+
 def test_load_scripts():
     subprocess.call = mock.create_autospec(subprocess.call, return_value=script_query)
     scripts = rpm.load_scripts('dummy')
@@ -36,5 +38,18 @@ def test_load_scripts():
     assert 'postinstall' in scripts, 'Should be a postinstall script'
     assert 'preuninstall' in scripts, 'Should be a preuninstall script'
     assert 'postuninstall' in scripts, 'Should be a postuninstall script'
+
+taglist_query = """
+ARCH
+ARCHIVESIZE
+BASENAMES
+"""
+
+def test_load_taglist():
+    subprocess.call = mock.create_autospec(subprocess.call, return_value=taglist_query)
+    taglist = rpm.load_taglist('dummy')
+    print taglist
+    assert 'ARCH' in taglist, 'Should be a summary in tag list'
+    assert len(taglist) == 3
 
 
