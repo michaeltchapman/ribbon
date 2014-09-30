@@ -69,10 +69,21 @@ def load_tags(path):
         value = None if (value == [] or value == ['']) else value
         tags[tag] = value
         log.debug("loaded tag {0}: {1}".format(tag, value))
+    requires = format_requires(tags)
+    rpm = { 'requires' :  requires, 'tags': tags}
     return tags
 
 def format_requires(tags):
-    pass
+    requires = {}
+    for i, req in enumerate(tags['REQUIRES']):
+        if req != '':
+            res = {}
+            res['flags'] = requireflags.parse_number(tags['REQUIREFLAGS'][i])
+            res['version'] = tags['REQUIREVERSION'][i]
+            requires[req] = res
+            log.debug("requirement: {0}: {1} {2}".format(req, ' '.join(res['flags']), res['version']))
+    return requires
+
 
 # rpm -qp --querytags openstack-keystone-2014.1.2.1-1.el6.noarch.rpm
 def load_taglist(path):
