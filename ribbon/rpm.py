@@ -5,8 +5,40 @@ import re
 import subprocess
 import logging
 import requireflags
+import os
 
 log = logging.getLogger('build')
+
+# list of tags that are arrays
+array_tags = [
+  'SOURCE',
+  'PATCH',
+  'FILENAMES',
+  'FILESTATES',
+  'FILEMODES',
+  'FILEUIDS',
+  'FILEGIDS',
+  'FILEMTIMES',
+  'FILERDEVS',
+  'FILEMD5S',
+  'FILELINKTOS',
+  'FILEFLAGS',
+  'FILEGROUPNAME',
+  'FILEVERIFYFLAGS',
+  'PROVIDES',
+  'REQUIREFLAGS',
+  'REQUIRENAME',
+  'REQUIREVERSION',
+  'NOSOURCE',
+  'NOPATCH',
+  'CONFLICTFLAGS',
+  'CONFLICTNAME',
+  'CONFLICTVERSION',
+  'EXCLUDEARCH',
+  'EXCLUDEOS',
+  'EXCLUSIVEARCH',
+  'EXCLUSIVEOS',
+]
 
 def load(path):
     try:
@@ -21,15 +53,25 @@ def load_tags(path):
     tags = {}
     taglist = load_taglist(path)
     log.debug("loading tags : %s", str(taglist))
+    FNULL = open(os.devnull, 'w')
     for tag in taglist:
-        command = ['rpm', '-qp', '--queryformat', '[%{' + tag.strip(' ') + '}\\n]', path]
+        if tag in array_tags:
+            command = ['rpm', '-qp', '--queryformat', '[%{' + tag.strip(' ') + '}\\n]', path]
+        else:
+            command = ['rpm', '-qp', '--queryformat', '%{' + tag.strip(' ') + '}', path]
         log.debug("running : %s", ' '.join(command))
-        tags[tag] = subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0].split('\n')
+        if tag in array_tags:
+            tags[tag] = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=FNULL).communicate()[0].split('\n')
+        else:
+            tags[tag] = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=FNULL).communicate()[0]
     for tag, value in tags.items():
         value = None if (value == [] or value == ['']) else value
         tags[tag] = value
-    log.debug("loaded tags : {0}".format(str(tags)))
+        log.debug("loaded tag {0}: {1}".format(tag, value))
     return tags
+
+def format_requires(tags):
+    pass
 
 # rpm -qp --querytags openstack-keystone-2014.1.2.1-1.el6.noarch.rpm
 def load_taglist(path):
