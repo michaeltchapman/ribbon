@@ -4,13 +4,13 @@ Methods for parsing and writing rpm spec files
 import re
 import subprocess
 import logging
-import requireflags
+import flags
 import os
 
 log = logging.getLogger('build')
 
 # list of tags that are arrays
-array_tags = [
+other_arrays = [
   'SOURCE',
   'SOURCEPACKAGE'
   'SOURCEPCKGID'
@@ -19,11 +19,33 @@ array_tags = [
   'PATCHESFLAGS',
   'PATCHESNAME',
   'PATCHESVERSION',
+  'PROVIDES',
+  'PROVIDENAME',
+  'PROVIDEVERSION',
+  'PROVIDEFLAGS',
+  'NOSOURCE',
+  'NOPATCH',
+  'CONFLICTS',
+  'CONFLICTFLAGS',
+  'CONFLICTNAME',
+  'CONFLICTVERSION',
+  'EXCLUDEARCH',
+  'EXCLUDEOS',
+  'EXCLUSIVEARCH',
+  'EXCLUSIVEOS',
+]
+require_arrays = [
+  'REQUIRES',
+  'REQUIREFLAGS',
+  'REQUIRENAME',
+  'REQUIREVERSION',
+]
+file_arrays = [
   'FILENAMES',
   'FILESTATES',
   'FILEMODES',
-  'FILEUIDS',
-  'FILEGIDS',
+  #'FILEUIDS',
+  #'FILEGIDS',
   'FILEMTIMES',
   'FILERDEVS',
   'FILEINODES',
@@ -34,7 +56,6 @@ array_tags = [
   'FILEDEPENDSN',
   'FILEDEPENDSX',
   'FILEDEVICES',
-  'FILEDIGESTALGO',
   'FILEDIGESTS',
   'FILELANGS',
   'FILEPROVIDE',
@@ -46,24 +67,6 @@ array_tags = [
   'FILEFLAGS',
   'FILEGROUPNAME',
   'FILEVERIFYFLAGS',
-  'PROVIDES',
-  'PROVIDENAME',
-  'PROVIDEVERSION',
-  'PROVIDEFLAGS',
-  'REQUIRES',
-  'REQUIREFLAGS',
-  'REQUIRENAME',
-  'REQUIREVERSION',
-  'NOSOURCE',
-  'NOPATCH',
-  'CONFLICTS',
-  'CONFLICTFLAGS',
-  'CONFLICTNAME',
-  'CONFLICTVERSION',
-  'EXCLUDEARCH',
-  'EXCLUDEOS',
-  'EXCLUSIVEARCH',
-  'EXCLUSIVEOS',
 ]
 
 def load(path):
@@ -80,13 +83,14 @@ def load_tags(path):
     taglist = load_taglist(path)
     log.debug("loading tags : %s", str(taglist))
     FNULL = open(os.devnull, 'w')
+    arrays = file_arrays + require_arrays + other_arrays
     for tag in taglist:
-        if tag in array_tags:
+        if tag in arrays:
             command = ['rpm', '-qp', '--queryformat', '[%{' + tag.strip(' ') + '}\\n]', path]
         else:
             command = ['rpm', '-qp', '--queryformat', '%{' + tag.strip(' ') + '}', path]
         log.debug("running : %s", ' '.join(command))
-        if tag in array_tags:
+        if tag in arrays:
             tags[tag] = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=FNULL).communicate()[0].split('\n')
         else:
             tags[tag] = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=FNULL).communicate()[0]
@@ -95,7 +99,8 @@ def load_tags(path):
         tags[tag] = value
         log.debug("loaded tag {0}: {1}".format(tag, value))
     requires = format_requires(tags)
-    rpm = { 'requires' :  requires, 'tags': tags}
+    files = format_files(tags)
+    rpm = { 'requires' :  requires, 'tags': tags, 'files': files}
     return tags
 
 def format_requires(tags):
@@ -103,11 +108,32 @@ def format_requires(tags):
     for i, req in enumerate(tags['REQUIRES']):
         if req != '':
             res = {}
-            res['flags'] = requireflags.parse_number(tags['REQUIREFLAGS'][i])
+            res['flags'] = flags.parse_flags(tags['REQUIREFLAGS'][i], 'require_flags')
             res['version'] = tags['REQUIREVERSION'][i]
             requires[req] = res
             log.debug("requirement: {0}: {1} {2}".format(req, ' '.join(res['flags']), res['version']))
     return requires
+
+def format_files(tags):
+    files = {}
+
+    for i, req in enumerate(tags['FILENAMES']):
+        if req != '':
+            res = {}
+            res['flags'] = flags.parse_flags(tags['FILEFLAGS'][i], 'file_flags')
+            for tag in file_arrays:
+                if tags[tag] and tags[tag][i] != '':
+                    value = tags[tag][i]
+                else:
+                    value = None
+                if tag[-1] == 'S' and tag != 'FILECLASS':
+                    tag = tag[:-1]
+                res[tag.lower()[4:]] = value
+                files[req] = res
+            for k, v in res.items():
+                log.debug("file: {0}, {1} = {2}".format(req, k, str(res[k])))
+
+    return files
 
 # rpm -qp --querytags openstack-keystone-2014.1.2.1-1.el6.noarch.rpm
 def load_taglist(path):
@@ -129,17 +155,3 @@ def load_scripts(path):
         else:
             scripts[script[0][0]] = '\n'.join(scriptlines[script[1] + 1:])
     return scripts
-
-def load_macros():
-    raise NotImplementedError
-
-# rpm -qp --filesbypkg openstack-keystone-2014.1.2.1-1.el6.src.rpm 2>/dev/null
-def load_files():
-    raise NotImplementedError
-
-def load_directives():
-    raise NotImplementedError
-
-def load_conditionals():
-    raise NotImplementedError
-

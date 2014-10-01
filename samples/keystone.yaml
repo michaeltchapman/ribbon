@@ -6,7 +6,6 @@ upstreams:
     #url: 'https://repos.fedorapeople.org/repos/openstack/openstack-icehouse/epel-6/openstack-keystone-2014.1.2.1-1.el6.src.rpm'
     path: '/root/keystone/openstack-keystone-2014.1.2.1-1.el6.noarch.rpm'
   extract:
-    - 'tags'
     - 'dependencies'
     - 'init_scripts'
     - 'package_scripts':
@@ -14,7 +13,7 @@ upstreams:
       - postinstall
       - preuninstall
       - postuninstall
-    - paths:
+    - files:
       - 'etc'
 
 pre_build:

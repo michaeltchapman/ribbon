@@ -2,20 +2,26 @@
 
 import yaml
 import logging
-
-import ribbon.rpm
+import sys
+import rpm.rpm as rpm
 
 log = False
 noop = False
 
 def build(args):
     if args.debug:
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(filename='log.ribbon.build.log',level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
 
     global log
     log = logging.getLogger(__name__)
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.ERROR)
+    formatter = logging.Formatter('%(name)s: %(levelname)s: %(message)s')
+    ch.setFormatter(formatter)
+    logging.getLogger().addHandler(ch)
+
     noop = args.noop
     config = parse_config(args.path[0])
     log.debug('Config loaded: %s', config)
@@ -39,6 +45,7 @@ def parse_config(path):
         log.error('Exception opening file at: %s', path)
 
 def upstreams(config):
+    upstream = {}
     if 'rpm' in config['upstreams']:
         if 'url' in config['upstreams']['rpm']:
             # wget to a path and then
@@ -47,13 +54,13 @@ def upstreams(config):
             # yum download the package and then
             path = place_downloaded_to
         if 'path' in config['upstreams']['rpm']:
-            # This is probably not useful in pratice
+            # This is probably not useful beyond debug
             path = config['upstreams']['rpm']['path']
     if ('extract' in config['upstreams']):
-        if ('package_scripts' in config['upstreams']['extract']):
-            scripts = ribbon.rpm.load_scripts(path)
-        if ('tags' in config['upstreams']['extract']):
-            tags    = ribbon.rpm.load_tags(path)
+        upstream['tags']            = rpm.load_tags(path)
+        upstream['package_scripts'] = tags['scripts']
+        upstream['dependencies']    = tags['requires']
+        upstream['files']           = tags['files']
     return
 
 def pre_build(config):

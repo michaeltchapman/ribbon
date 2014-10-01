@@ -1,6 +1,9 @@
 
-# rpm 4.8 (EL6) Structure.
-flags = {
+flags = {}
+flags['4.8'] = {}
+#flags['4.11'] = {}
+
+flags['4.8']['require_flags'] = {
     'ANY'        : 0,
     'LESS'       : (1 << 1),    # <
     'GREATER'    : (1 << 2),    # >
@@ -61,7 +64,28 @@ flags = {
 #/* bit 27 unused */
 #CONFIG     = (1 << 28)
 
-def parse_number(n):
-    n = int(n)
-    return [ f for f, v in flags.items() if n & v]
+# 4.8 structure
+flags['4.8']['file_flags'] = {
+    'NONE'        : 0,
+    'CONFIG'      : (1 <<  0),#    /*!< from %%config */
+    'DOC'         : (1 <<  1),#    /*!< from %%doc */
+    'ICON'        : (1 <<  2),#    /*!< from %%donotuse. */
+    'MISSINGOK'   : (1 <<  3),#    /*!< from %%config(missingok) */
+    'NOREPLACE'   : (1 <<  4),#    /*!< from %%config(noreplace) */
+    'SPECFILE'    : (1 <<  5),#    /*!< @todo (unnecessary) marks 1st file in srpm. */
+    'GHOST'       : (1 <<  6),#    /*!< from %%ghost */
+    'LICENSE'     : (1 <<  7),#    /*!< from %%license */
+    'README'      : (1 <<  8),#    /*!< from %%readme */
+    'EXCLUDE'     : (1 <<  9),#    /*!< from %%exclude, internal */
+    'UNPATCHED'   : (1 << 10),#    /*!< placeholder (SuSE) */
+    'PUBKEY'      : (1 << 11),#    /*!< from %%pubkey */
+    'POLICY'      : (1 << 12) #    /*!< from %%policy */
+}
 
+def parse_flags(n, flag_type, rpm_version='4.8'):
+    if rpm_version not in flags.keys():
+        raise LookupError('tried to look up nonexistant rpm version %s during flag parsing', flag_type)
+    if flag_type not in flags[rpm_version].keys():
+        raise LookupError('tried to look up nonexistant flag type %s during flag parsing', flag_type)
+
+    return [ f for f, v in flags[rpm_version][flag_type].items() if int(n) & v]
