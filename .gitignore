@@ -2,3 +2,5 @@
 build
 dist
 ribbon.egg-info
+*.swp
+*.log
