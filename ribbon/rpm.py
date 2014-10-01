@@ -47,6 +47,9 @@ array_tags = [
   'FILEGROUPNAME',
   'FILEVERIFYFLAGS',
   'PROVIDES',
+  'PROVIDENAME',
+  'PROVIDEVERSION',
+  'PROVIDEFLAGS',
   'REQUIRES',
   'REQUIREFLAGS',
   'REQUIRENAME',
@@ -87,7 +90,7 @@ def load_tags(path):
             tags[tag] = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=FNULL).communicate()[0].split('\n')
         else:
             tags[tag] = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=FNULL).communicate()[0]
-    for tag, value in tags.items():
+    for tag, value in sorted(tags.items()):
         value = None if (value == [] or value == ['']) else value
         tags[tag] = value
         log.debug("loaded tag {0}: {1}".format(tag, value))
@@ -105,7 +108,6 @@ def format_requires(tags):
             requires[req] = res
             log.debug("requirement: {0}: {1} {2}".format(req, ' '.join(res['flags']), res['version']))
     return requires
-
 
 # rpm -qp --querytags openstack-keystone-2014.1.2.1-1.el6.noarch.rpm
 def load_taglist(path):
