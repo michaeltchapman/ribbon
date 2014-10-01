@@ -69,6 +69,8 @@ file_arrays = [
   'FILEVERIFYFLAGS',
 ]
 
+FNULL = open(os.devnull, 'w')
+
 def load(path):
     try:
         with open(path) as f:
@@ -82,7 +84,6 @@ def load_tags(path):
     tags = {}
     taglist = load_taglist(path)
     log.debug("loading tags : %s", str(taglist))
-    FNULL = open(os.devnull, 'w')
     arrays = file_arrays + require_arrays + other_arrays
     for tag in taglist:
         if tag in arrays:
@@ -101,7 +102,7 @@ def load_tags(path):
     requires = format_requires(tags)
     files = format_files(tags)
     rpm = { 'requires' :  requires, 'tags': tags, 'files': files}
-    return tags
+    return rpm
 
 def format_requires(tags):
     requires = {}
@@ -138,12 +139,12 @@ def format_files(tags):
 # rpm -qp --querytags openstack-keystone-2014.1.2.1-1.el6.noarch.rpm
 def load_taglist(path):
     log.debug("rpm -qp --querytags %s 2>/dev/null" % path)
-    return filter(None, subprocess.Popen(['rpm', '-qp', '--querytags', path, '2>/dev/null'], stdout=subprocess.PIPE).communicate()[0].split('\n'))
+    return filter(None, subprocess.Popen(['rpm', '-qp', '--querytags', path, '2>/dev/null'], stdout=subprocess.PIPE, stderr=FNULL).communicate()[0].split('\n'))
 
 # rpm -qp --scripts openstack-keystone-2014.1.2.1-1.el6.noarch.rpm
 def load_scripts(path):
     scripts = {}
-    scriptlines = subprocess.Popen(['rpm', '-qp', '--scripts', path, '2>/dev/null'], stdout=subprocess.PIPE).communicate()[0].split('\n')
+    scriptlines = subprocess.Popen(['rpm', '-qp', '--scripts', path, '2>/dev/null'], stdout=subprocess.PIPE, stderr=FNULL).communicate()[0].split('\n')
     scriptlist = []
     for i, line in enumerate(scriptlines):
         res = re.match('(\S*)\s*\S*\s*\(using\s*(\S*)\):', line)

@@ -26,7 +26,7 @@ def build(args):
     config = parse_config(args.path[0])
     log.debug('Config loaded: %s', config)
 
-    upstreams(config)
+    upstream_config = upstreams(config)
     return
     pre_build(config)
     source_build(config)
@@ -57,11 +57,12 @@ def upstreams(config):
             # This is probably not useful beyond debug
             path = config['upstreams']['rpm']['path']
     if ('extract' in config['upstreams']):
-        upstream['tags']            = rpm.load_tags(path)
-        upstream['package_scripts'] = tags['scripts']
+        tags                        = rpm.load_tags(path)
+        upstream['tags']            = tags['tags']
+        upstream['package_scripts'] = rpm.load_scripts(path)
         upstream['dependencies']    = tags['requires']
         upstream['files']           = tags['files']
-    return
+    return upstream
 
 def pre_build(config):
     raise NotImplementedError
